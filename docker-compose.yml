@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tgms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tgms_auth
+      POSTGRES_USER: tgms_user
+      POSTGRES_PASSWORD: tgms_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tgms_user -d tgms_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tgms-network
+
+  # TGMS Auth User Service
+  tgms-auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tgms-auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      # Server Configuration
+      SERVER_PORT: 8081
+      
+      # Database Configuration
+      DB_URL: jdbc:postgresql://postgres:5432/tgms_auth
+      DB_USERNAME: tgms_user
+      DB_PASSWORD: tgms_password
+      
+      # JWT Configuration
+      JWT_SECRET: your-production-secret-key-minimum-256-bits-change-this-in-production
+      JWT_EXPIRATION_MS: 3600000
+      JWT_ISSUER: tgms-auth-service
+      
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: prod
+      
+      # JVM Options
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tgms-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  tgms-network:
+    driver: bridge

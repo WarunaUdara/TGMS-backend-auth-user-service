@@ -1,0 +1,43 @@
+# Maven
+target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README.md
+DOCKER-DEPLOYMENT.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Test coverage
+.coverage/
+jacoco.exec
+
+# OS
+.DS_Store
+Thumbs.db
